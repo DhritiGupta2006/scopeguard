@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ScopeGuard</title>
+<style>
+:root{
+  --bg:#faf7f2; --card:#fff; --ink:#1f1b16; --mute:#6b645a; --line:#e6dfd3; --accent:#1f4d3a;
+  --ok:#1d6b3a; --ok-bg:#e6f4ea; --out:#a3271f; --out-bg:#fbeae8; --amb:#8a5a00; --amb-bg:#fff3d6;
+  --gray:#5c5c5c; --gray-bg:#eeeeee; --mark:#ffe58a;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#171512; --card:#211e1a; --ink:#f1ece3; --mute:#a59d90; --line:#37322b; --accent:#7fd1a6;
+  --ok:#7fd1a6; --ok-bg:#183326; --out:#ff9f95; --out-bg:#3a1b18; --amb:#f2c15c; --amb-bg:#3a2d10; --gray:#c9c9c9; --gray-bg:#2c2c2c; --mark:#6b5a12;}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:16px 24px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+h1{margin:0;font-size:20px;letter-spacing:-.01em}
+header p{margin:0;color:var(--mute)}
+#banner{display:none;margin:12px 24px 0;padding:10px 14px;border-radius:8px;background:var(--amb-bg);color:var(--amb);font-size:14px}
+main{display:grid;grid-template-columns:minmax(260px,320px) minmax(320px,1fr) minmax(280px,360px);gap:16px;padding:16px 24px;align-items:start}
+@media (max-width:1000px){main{grid-template-columns:1fr;padding:16px}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h2{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute)}
+label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+textarea,input[type=text],input[type=number]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px}
+textarea{resize:vertical}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 12px}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (prefers-color-scheme: dark){button.primary{color:#10261b}}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,textarea:focus-visible,input:focus-visible,.bubble:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+#thread{display:flex;flex-direction:column;gap:10px;min-height:120px}
+.bubble{border:1px solid var(--line);border-left-width:5px;border-radius:10px;padding:10px 12px;background:var(--card);cursor:pointer}
+.bubble.me{margin-left:48px;background:var(--bg);cursor:default;border-left-color:var(--line)}
+.bubble.sel{box-shadow:0 0 0 2px var(--accent)}
+.bubble.in_scope{border-left-color:var(--ok)} .bubble.out_of_scope{border-left-color:var(--out)}
+.bubble.ambiguous{border-left-color:var(--amb)} .bubble.no_request,.bubble.needs_review{border-left-color:var(--gray)}
+.who{font-size:12px;color:var(--mute);margin-bottom:2px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.chip{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px}
+.chip.in_scope{background:var(--ok-bg);color:var(--ok)} .chip.out_of_scope{background:var(--out-bg);color:var(--out)}
+.chip.ambiguous{background:var(--amb-bg);color:var(--amb)} .chip.no_request,.chip.needs_review,.chip.neutral{background:var(--gray-bg);color:var(--gray)}
+.why{font-size:13.5px;margin-top:6px}
+.ask{font-size:13.5px;margin-top:6px;padding:8px;border-radius:8px;background:var(--amb-bg);color:var(--amb)}
+.meter{font-size:34px;font-weight:700;letter-spacing:-.02em;color:var(--out)}
+.sub{color:var(--mute);font-size:13px}
+.clause{padding:6px 8px;border-radius:6px;font-size:13.5px;margin:4px 0}
+.clause.hit{background:var(--out-bg)} .clause b{font-variant-numeric:tabular-nums}
+mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 2px}
+.trace{font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;color:var(--mute);margin:0;padding-left:0;list-style:none}
+.trace li{padding:3px 0;border-bottom:1px dashed var(--line)} .trace b{color:var(--ink)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);width:min(640px,92vw);padding:18px}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog textarea{min-height:260px;font-family:inherit}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s 1s linear infinite;vertical-align:-2px}
+@keyframes s{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>ScopeGuard</h1>
+  <p>Checks every client request against your signed scope, cites the clause, and tracks the work you haven't billed.</p>
+</header>
+<div id="banner" role="status"></div>
+<main>
+  <section class="card" aria-label="Inputs">
+    <h2>1 · Your agreement</h2>
+    <label for="scope">Signed scope (numbered clauses)</label>
+    <textarea id="scope" rows="12" placeholder="1. Deliverables: ...&#10;2. Revisions: Up to 3 rounds ..."></textarea>
+    <label for="rate">Your rate (₹ per hour)</label>
+    <input id="rate" type="number" min="1" value="1500">
+    <label for="threadin">Client chat (one message per line, "Client: …")</label>
+    <textarea id="threadin" rows="8"></textarea>
+    <div class="row">
+      <button id="demo">Load bakery demo</button>
+      <button id="go" class="primary">Check the chat</button>
+    </div>
+  </section>
+
+  <section aria-label="Conversation">
+    <div class="card">
+      <h2>2 · Conversation</h2>
+      <div id="thread"><span class="sub">Load the demo or paste your own scope and chat, then press “Check the chat”.</span></div>
+      <label for="live">Try a new client message</label>
+      <div class="row" style="margin-top:0">
+        <input id="live" type="text" style="flex:1;min-width:200px" placeholder='e.g. "Can you also add a booking calendar?"'>
+        <button id="check">Check it</button>
+      </div>
+    </div>
+  </section>
+
+  <aside style="display:grid;gap:16px">
+    <div class="card">
+      <h2>Unbilled extra work</h2>
+      <div class="meter" id="meter" aria-live="polite">₹0</div>
+      <div class="sub" id="revs">Revision rounds used: 0</div>
+      <div class="row"><button id="order" class="primary" disabled>Draft change order</button></div>
+      <div class="sub" style="margin-top:6px">Nothing is ever sent for you. You review and copy the draft.</div>
+    </div>
+    <div class="card">
+      <h2>Why this verdict</h2>
+      <div id="detail" class="sub">Select a message to see the clause it was checked against.</div>
+    </div>
+    <div class="card">
+      <h2>Agent steps</h2>
+      <ul class="trace" id="trace"><li class="sub">No message selected.</li></ul>
+    </div>
+  </aside>
+</main>
+
+<dialog id="dlg">
+  <h2 style="margin-top:0">Change order draft</h2>
+  <p class="sub" id="dlgnote"></p>
+  <textarea id="dlgtext" aria-label="Change order text"></textarea>
+  <div class="row" style="justify-content:flex-end">
+    <button id="dlgclose">Close</button>
+    <button id="dlgcopy" class="primary">Approve and copy</button>
+  </div>
+</dialog>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LABEL = {in_scope:"In scope", out_of_scope:"Out of scope", ambiguous:"Needs a question", no_request:"No request", needs_review:"Review manually"};
+let clauses = [], messages = [], results = {}, state = {revisions_used:0, unbilled:0, items:[]}, selected = null, shown = 0, busy = false;
+
+const fmt = n => "₹" + Math.round(n).toLocaleString("en-IN");
+function setMeter(target){
+  const el = $("meter"), from = shown, t0 = performance.now();
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches){ el.textContent = fmt(target); shown = target; return; }
+  (function tick(t){ const p = Math.min(1,(t-t0)/500); el.textContent = fmt(from+(target-from)*p); if(p<1) requestAnimationFrame(tick); else shown = target; })(t0);
+}
+function renderMeter(){
+  setMeter(state.unbilled);
+  const lim = results && Object.values(results).find(r => r.revision_limit != null);
+  $("revs").textContent = "Revision rounds used: " + state.revisions_used + (lim ? " of " + lim.revision_limit + " included" : "");
+  $("order").disabled = state.items.length === 0 || busy;
+}
+
+function bubbleHTML(m, r, pending){
+  if (!m.is_client) return `<div class="who">${esc(m.sender)} (you)</div>${esc(m.text)}`;
+  let h = `<div class="who">${esc(m.sender)}</div>${esc(m.text)}`;
+  if (pending) return h + `<div class="chips"><span class="spin" aria-hidden="true"></span><span class="sub">checking against your scope…</span></div>`;
+  if (!r) return h;
+  h += `<div class="chips"><span class="chip ${r.verdict}">${LABEL[r.verdict]}</span>`;
+  if (r.is_revision && r.verdict !== "needs_review") h += `<span class="chip neutral">Revision ${r.revision_count}${r.revision_limit?"/"+r.revision_limit:""}</span>`;
+  if (r.verdict === "out_of_scope") h += `<span class="chip out_of_scope">${fmt(r.price)} · ${r.estimated_hours} h</span>`;
+  if (r.clause_ids.length) h += `<span class="chip neutral">Clause ${esc(r.clause_ids.join(", "))}</span>`;
+  if (r.source === "cached") h += `<span class="chip neutral">replayed</span>`;
+  h += `</div>`;
+  if (r.override_note) h += `<div class="why"><b>${esc(r.override_note)}</b></div>`;
+  else if (r.reasoning) h += `<div class="why">${esc(r.reasoning)}</div>`;
+  if (r.verdict === "ambiguous" && r.clarifying_question) h += `<div class="ask">Ask the client: “${esc(r.clarifying_question)}”</div>`;
+  return h;
+}
+function renderThread(pendingIdx){
+  const t = $("thread"); t.innerHTML = "";
+  messages.forEach(m => {
+    const r = results[m.index];
+    const d = document.createElement("div");
+    d.className = "bubble " + (m.is_client ? (r ? r.verdict : "") : "me") + (selected === m.index ? " sel" : "");
+    if (m.is_client){ d.tabIndex = 0; d.setAttribute("role","button"); d.onclick = () => select(m.index); d.onkeydown = e => { if(e.key==="Enter"||e.key===" "){e.preventDefault();select(m.index);} }; }
+    d.innerHTML = bubbleHTML(m, r, pendingIdx === m.index);
+    t.appendChild(d);
+  });
+}
+function highlight(text, quote){
+  const i = text.toLowerCase().indexOf(quote.toLowerCase());
+  if (quote && i >= 0) return esc(text.slice(0,i)) + "<mark>" + esc(text.slice(i,i+quote.length)) + "</mark>" + esc(text.slice(i+quote.length));
+  return quote ? "<mark>" + esc(text) + "</mark>" : esc(text);
+}
+function select(idx){
+  selected = idx; const r = results[idx]; renderThread();
+  const d = $("detail"), tr = $("trace");
+  if (!r){ d.textContent = "Not checked yet."; tr.innerHTML = ""; return; }
+  let h = `<div style="margin-bottom:6px"><b>${LABEL[r.verdict]}</b>${r.request_summary ? " · " + esc(r.request_summary) : ""}</div>`;
+  clauses.forEach(c => { const hit = r.clause_ids.includes(c.id);
+    h += `<div class="clause ${hit ? "hit":""}"><b>${esc(c.id)}.</b> ${hit ? highlight(c.text, r.quote) : esc(c.text)}</div>`; });
+  if (r.verdict !== "needs_review" && r.verdict !== "no_request" && r.verdict !== "ambiguous") h += `<div class="sub">The highlighted quote was checked word for word against your scope by code, not just by the model.</div>`;
+  d.innerHTML = h;
+  tr.innerHTML = (r.trace && r.trace.length) ? r.trace.map(s => `<li><b>${esc(s.tool)}</b> ${esc(s.input)}<br>→ ${esc(s.output)}</li>`).join("") : `<li>No steps recorded.</li>`;
+}
+
+async function api(path, body){
+  const r = await fetch(path, {method: body ? "POST" : "GET", headers: {"Content-Type":"application/json"}, body: body ? JSON.stringify(body) : undefined});
+  if (!r.ok) throw new Error(path + " " + r.status);
+  return r.json();
+}
+async function checkOne(m){
+  const out = await api("/api/message", {scope: $("scope").value, rate: Number($("rate").value), message: m.text, state});
+  results[m.index] = out.result; state = out.state;
+}
+async function runThread(){
+  if (busy) return; busy = true; $("go").disabled = $("check").disabled = true;
+  try {
+    const p = await api("/api/parse", {scope: $("scope").value, thread: $("threadin").value});
+    clauses = p.clauses; messages = p.messages; results = {}; selected = null; state = {revisions_used:0, unbilled:0, items:[]}; renderMeter(); renderThread();
+    if (!clauses.length){ $("thread").innerHTML = '<span class="sub">No numbered clauses found. Start each clause with “1.”, “2.” …</span>'; return; }
+    for (const m of messages.filter(x => x.is_client)){
+      renderThread(m.index);
+      try { await checkOne(m); } catch(e){ results[m.index] = {verdict:"needs_review", reasoning:"Request failed. Please judge this one yourself.", clause_ids:[], trace:[], price:0, estimated_hours:0}; }
+      renderThread(); renderMeter();
+    }
+    const last = messages.filter(x => x.is_client && results[x.index]?.verdict === "out_of_scope").pop();
+    if (last) select(last.index);
+  } finally { busy = false; $("go").disabled = $("check").disabled = false; renderMeter(); }
+}
+async function liveCheck(){
+  const text = $("live").value.trim(); if (!text || busy) return;
+  if (!clauses.length){ const p = await api("/api/parse", {scope: $("scope").value, thread: "Client: x"}); clauses = p.clauses; }
+  busy = true; $("go").disabled = $("check").disabled = true;
+  const m = {index: messages.length ? messages[messages.length-1].index + 1 : 0, sender:"Client", text, is_client:true};
+  messages.push(m); renderThread(m.index);
+  try { await checkOne(m); } catch(e){ results[m.index] = {verdict:"needs_review", reasoning:"Request failed. Please judge this one yourself.", clause_ids:[], trace:[], price:0, estimated_hours:0}; }
+  $("live").value = ""; busy = false; $("go").disabled = $("check").disabled = false; renderThread(); renderMeter(); select(m.index);
+}
+
+$("demo").onclick = async () => { const d = await api("/api/demo"); $("scope").value = d.scope; $("rate").value = d.rate; $("threadin").value = d.thread; };
+$("go").onclick = runThread;
+$("check").onclick = liveCheck;
+$("live").onkeydown = e => { if (e.key === "Enter") liveCheck(); };
+$("order").onclick = async () => {
+  const co = await api("/api/change_order", {items: state.items, rate: Number($("rate").value)});
+  $("dlgtext").value = co.message;
+  $("dlgnote").textContent = "Total " + fmt(co.total) + " is calculated by code from your rate card. Edit anything, then copy. ScopeGuard never sends messages.";
+  $("dlg").showModal();
+};
+$("dlgclose").onclick = () => $("dlg").close();
+$("dlgcopy").onclick = async () => { try { await navigator.clipboard.writeText($("dlgtext").value); $("dlgcopy").textContent = "Copied ✓"; } catch(e){ $("dlgtext").select(); $("dlgcopy").textContent = "Press Ctrl+C"; } setTimeout(() => $("dlgcopy").textContent = "Approve and copy", 2000); };
+
+api("/api/health").then(h => { if (!h.llm_configured){ const b = $("banner"); b.style.display = "block"; b.textContent = "No model key is configured on this server. Only messages that were checked before can be replayed; everything else will say “Review manually”."; } }).catch(()=>{});
+</script>
+</body>
+</html>

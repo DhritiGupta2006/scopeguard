@@ -1,0 +1,32 @@
+{
+ "edd8876f298b0a2daa4599310e96ca2337ab4314": {
+  "sub": {
+   "verdict": "out_of_scope",
+   "reasoning": "The scope document explicitly excludes SEO work.",
+   "is_revision": false,
+   "request_summary": "Set up SEO",
+   "estimated_hours": 10,
+   "quote": "SEO work, copywriting, photography and hosting are not included.",
+   "clause_ids": [
+    "4"
+   ]
+  },
+  "trace": [
+   {
+    "tool": "search_scope_clauses",
+    "input": "{\"query\": \"SEO\"}",
+    "output": "{\"clauses\": [{\"id\": \"4\", \"text\": \"Exclusions: E-commerce, online payments or ordering, a blog, SEO work, copywriting, photography and hosting are not…"
+   },
+   {
+    "tool": "submit_verdict",
+    "input": "{\"verdict\": \"out_of_scope\", \"clause_ids\": [\"4\"]}",
+    "output": "give estimated_hours greater than 0 for a concrete request"
+   },
+   {
+    "tool": "submit_verdict",
+    "input": "{\"verdict\": \"out_of_scope\", \"clause_ids\": [\"4\"]}",
+    "output": "accepted"
+   }
+  ]
+ }
+}
