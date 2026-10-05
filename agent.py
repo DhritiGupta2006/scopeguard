@@ -15,6 +15,7 @@ import json
 import os
 import re
 import threading
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -322,7 +323,7 @@ def _key(scope_text: str, rate: float, message: str) -> str:
 
 def _cache_load() -> dict:
     try:
-        return json.loads(CACHE_PATH.read_text())
+        return json.loads(CACHE_PATH.read_text(encoding="utf-8"))
     except Exception:
         return {}
 
@@ -332,7 +333,7 @@ def _cache_store(key: str, sub: dict, trace: list[dict]) -> None:
         data = _cache_load()
         data[key] = {"sub": sub, "trace": trace}
         CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        CACHE_PATH.write_text(json.dumps(data, indent=1, ensure_ascii=False))
+        CACHE_PATH.write_text(json.dumps(data, indent=1, ensure_ascii=False), encoding="utf-8")
 
 
 class OpenAICompatClient:
@@ -371,12 +372,23 @@ class OpenAICompatClient:
             if tool_choice and tool_choice.get("type") == "any":
                 body["tool_choice"] = "required"
         req = urllib.request.Request(self.base_url + "/chat/completions", data=json.dumps(body).encode(), method="POST",
-                                     headers={"Content-Type": "application/json", "Authorization": "Bearer " + self.api_key})
-        try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as r:
-                data = json.load(r)
-        except urllib.error.HTTPError as e:
-            raise RuntimeError(f"HTTP {e.code}: {e.read().decode(errors='replace')[:200]}") from None
+                                     headers={"Content-Type": "application/json", "Authorization": "Bearer " + self.api_key,
+                                              "User-Agent": "ScopeGuard/1.0"})
+        backoff = (1, 2)
+        for attempt in range(len(backoff) + 1):
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout) as r:
+                    data = json.load(r)
+                break
+            except urllib.error.HTTPError as e:
+                detail = e.read().decode(errors="replace")
+                # Rate limits and overload clear within seconds, and the model sometimes emits a malformed
+                # tool call that succeeds on the next try. Retry those; fail fast on everything else.
+                retryable = e.code in (429, 503) or (e.code == 400 and ("tool_use_failed" in detail or "failed_generation" in detail))
+                if retryable and attempt < len(backoff):
+                    time.sleep(backoff[attempt])
+                    continue
+                raise RuntimeError(f"HTTP {e.code}: {detail[:200]}") from None
         msg = data["choices"][0]["message"]
         blocks = []
         if msg.get("content"):

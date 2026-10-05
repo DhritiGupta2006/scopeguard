@@ -1,30 +1,180 @@
 {
- "edd8876f298b0a2daa4599310e96ca2337ab4314": {
+ "861ed1abe3d8f0442707076cec032bbf0bd3d00f": {
   "sub": {
-   "verdict": "out_of_scope",
-   "reasoning": "The scope document explicitly excludes SEO work.",
-   "is_revision": false,
-   "request_summary": "Set up SEO",
-   "estimated_hours": 10,
-   "quote": "SEO work, copywriting, photography and hosting are not included.",
+   "clause_ids": [
+    "2"
+   ],
+   "estimated_hours": 0.5,
+   "is_revision": true,
+   "quote": "Design revisions: Up to 3 rounds of design revisions are included. A round is one consolidated list of changes.",
+   "reasoning": "Changing the header color is a design tweak and falls under the Design revisions clause, which allows up to 3 rounds of revisions. This is a revision, not a new deliverable.",
+   "request_summary": "Change header color to a warmer cream",
+   "verdict": "in_scope"
+  },
+  "trace": [
+   {
+    "tool": "search_scope_clauses",
+    "input": "{\"query\": \"design revisions header color\"}",
+    "output": "{\"clauses\": [{\"id\": \"2\", \"text\": \"Design revisions: Up to 3 rounds of design revisions are included. A round is one consolidated list of changes.\"}]}"
+   },
+   {
+    "tool": "estimate_price",
+    "input": "{\"hours\": 0.5}",
+    "output": "{\"hours\": 0.5, \"rate_per_hour\": 1500.0, \"price\": 750}"
+   },
+   {
+    "tool": "verify_citation",
+    "input": "{\"clause_id\": \"2\", \"quote\": \"Design revisions: Up to 3 rounds of design revisions are included. A round is one consolidated list of changes.\"}",
+    "output": "{\"verified\": true, \"reason\": \"ok\"}"
+   },
+   {
+    "tool": "submit_verdict",
+    "input": "{\"clause_ids\": [\"2\"], \"verdict\": \"in_scope\"}",
+    "output": "accepted"
+   }
+  ]
+ },
+ "71d57e44c5a71b90d37a35c91e60ef57155cb093": {
+  "sub": {
    "clause_ids": [
     "4"
-   ]
+   ],
+   "estimated_hours": 30,
+   "is_revision": false,
+   "quote": "Exclusions: E-commerce, online payments or ordering, a blog, SEO work, copywriting, photography and hosting are not included.",
+   "reasoning": "The client wants to add e‑commerce functionality, which is explicitly listed as an exclusion in the scope document.",
+   "request_summary": "Add online ordering and payment functionality for cake purchases.",
+   "verdict": "out_of_scope"
+  },
+  "trace": [
+   {
+    "tool": "search_scope_clauses",
+    "input": "{\"query\": \"online ordering payment e-commerce\"}",
+    "output": "{\"clauses\": [{\"id\": \"4\", \"text\": \"Exclusions: E-commerce, online payments or ordering, a blog, SEO work, copywriting, photography and hosting are not…"
+   },
+   {
+    "tool": "estimate_price",
+    "input": "{\"hours\": 30}",
+    "output": "{\"hours\": 30, \"rate_per_hour\": 1500.0, \"price\": 45000}"
+   },
+   {
+    "tool": "verify_citation",
+    "input": "{\"clause_id\": \"4\", \"quote\": \"Exclusions: E-commerce, online payments or ordering, a blog, SEO work, copywriting, photography and hosting are not incl…",
+    "output": "{\"verified\": true, \"reason\": \"ok\"}"
+   },
+   {
+    "tool": "submit_verdict",
+    "input": "{\"clause_ids\": [\"4\"], \"verdict\": \"out_of_scope\"}",
+    "output": "give estimated_hours greater than 0 for a concrete request"
+   },
+   {
+    "tool": "submit_verdict",
+    "input": "{\"clause_ids\": [\"4\"], \"verdict\": \"out_of_scope\"}",
+    "output": "accepted"
+   }
+  ]
+ },
+ "acd9f7a28ed771cc99cf62c8293e194855671856": {
+  "sub": {
+   "clause_ids": [
+    "4"
+   ],
+   "estimated_hours": 5,
+   "is_revision": false,
+   "quote": "Exclusions: E-commerce, online payments or ordering, a blog, SEO work, copywriting, photography and hosting are not included.",
+   "reasoning": "The client asks for a blog section, but the scope explicitly excludes any blog work, making this request outside the agreed scope.",
+   "request_summary": "Add a small blog section for recipes.",
+   "verdict": "out_of_scope"
+  },
+  "trace": [
+   {
+    "tool": "search_scope_clauses",
+    "input": "{\"query\": \"blog section\"}",
+    "output": "{\"clauses\": [{\"id\": \"4\", \"text\": \"Exclusions: E-commerce, online payments or ordering, a blog, SEO work, copywriting, photography and hosting are not…"
+   },
+   {
+    "tool": "estimate_price",
+    "input": "{\"hours\": 5}",
+    "output": "{\"hours\": 5, \"rate_per_hour\": 1500.0, \"price\": 7500}"
+   },
+   {
+    "tool": "verify_citation",
+    "input": "{\"clause_id\": \"4\", \"quote\": \"Exclusions: E-commerce, online payments or ordering, a blog, SEO work, copywriting, photography and hosting are not incl…",
+    "output": "{\"verified\": true, \"reason\": \"ok\"}"
+   },
+   {
+    "tool": "submit_verdict",
+    "input": "{\"clause_ids\": [\"4\"], \"verdict\": \"out_of_scope\"}",
+    "output": "accepted"
+   }
+  ]
+ },
+ "95006bec8b41ff6e89caf9c157f1c159f5be3818": {
+  "sub": {
+   "clause_ids": [
+    "5"
+   ],
+   "estimated_hours": 3,
+   "is_revision": false,
+   "quote": "The client supplies all text and images before development begins.",
+   "reasoning": "The scope explicitly requires the client to provide all copy, so creating the About page text is not covered.",
+   "request_summary": "Write the About page text for the client.",
+   "verdict": "out_of_scope"
+  },
+  "trace": [
+   {
+    "tool": "search_scope_clauses",
+    "input": "{\"query\": \"About page text content writing\"}",
+    "output": "{\"clauses\": [{\"id\": \"1\", \"text\": \"Deliverables: Five responsive pages (Home, Menu, About, Gallery, Contact) that work on desktop and mobile.\"}, {\"id\"…"
+   },
+   {
+    "tool": "estimate_price",
+    "input": "{\"hours\": 3}",
+    "output": "{\"hours\": 3, \"rate_per_hour\": 1500.0, \"price\": 4500}"
+   },
+   {
+    "tool": "verify_citation",
+    "input": "{\"clause_id\": \"5\", \"quote\": \"The client supplies all text and images before development begins.\"}",
+    "output": "{\"verified\": true, \"reason\": \"ok\"}"
+   },
+   {
+    "tool": "submit_verdict",
+    "input": "{\"clause_ids\": [\"5\"], \"verdict\": \"out_of_scope\"}",
+    "output": "accepted"
+   }
+  ]
+ },
+ "b17906a97cf62e813b7ae7c7fa5fc81d008dc9d9": {
+  "sub": {
+   "clause_ids": [
+    "4"
+   ],
+   "estimated_hours": 10,
+   "is_revision": false,
+   "quote": "Exclusions: E-commerce, online payments or ordering, a blog, SEO work, copywriting, photography and hosting are not included.",
+   "reasoning": "The client asks for SEO setup, which is explicitly listed as an exclusion in clause 4, so it is outside the agreed scope.",
+   "request_summary": "Set up SEO to improve Google ranking",
+   "verdict": "out_of_scope"
   },
   "trace": [
    {
     "tool": "search_scope_clauses",
     "input": "{\"query\": \"SEO\"}",
-    "output": "{\"clauses\": [{\"id\": \"4\", \"text\": \"Exclusions: E-commerce, online payments or ordering, a blog, SEO work, copywriting, photography and hosting are not�"
+    "output": "{\"clauses\": [{\"id\": \"4\", \"text\": \"Exclusions: E-commerce, online payments or ordering, a blog, SEO work, copywriting, photography and hosting are not…"
+   },
+   {
+    "tool": "estimate_price",
+    "input": "{\"hours\": 10}",
+    "output": "{\"hours\": 10, \"rate_per_hour\": 1500.0, \"price\": 15000}"
+   },
+   {
+    "tool": "verify_citation",
+    "input": "{\"clause_id\": \"4\", \"quote\": \"Exclusions: E-commerce, online payments or ordering, a blog, SEO work, copywriting, photography and hosting are not incl…",
+    "output": "{\"verified\": true, \"reason\": \"ok\"}"
    },
    {
     "tool": "submit_verdict",
-    "input": "{\"verdict\": \"out_of_scope\", \"clause_ids\": [\"4\"]}",
-    "output": "give estimated_hours greater than 0 for a concrete request"
-   },
-   {
-    "tool": "submit_verdict",
-    "input": "{\"verdict\": \"out_of_scope\", \"clause_ids\": [\"4\"]}",
+    "input": "{\"clause_ids\": [\"4\"], \"verdict\": \"out_of_scope\"}",
     "output": "accepted"
    }
   ]

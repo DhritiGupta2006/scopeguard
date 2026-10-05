@@ -199,3 +199,22 @@ def test_adapter_http_error_becomes_needs_review(monkeypatch):
     monkeypatch.setattr(agent.urllib.request, "urlopen", boom)
     res, _ = agent.analyze_message(agent.OpenAICompatClient("k", "https://x.test", "m"), demo.SCOPE, RATE, "x", agent.new_state())
     assert res["verdict"] == "needs_review" and "401" in res["reasoning"]
+
+
+def test_adapter_retries_failed_tool_generation(monkeypatch):
+    """A 400 tool_use_failed is retried after a short backoff; the next good response is used."""
+    import io, json as _json, urllib.error
+    calls, sleeps = [], []
+
+    def flaky(req, timeout=None):
+        calls.append(1)
+        if len(calls) == 1:
+            raise urllib.error.HTTPError("u", 400, "bad", {}, io.BytesIO(b'{"error":{"code":"tool_use_failed"}}'))
+        msg = {"content": None, "tool_calls": [{"id": "c1", "type": "function", "function": {"name": "submit_verdict", "arguments": _json.dumps(OUT)}}]}
+        return io.BytesIO(_json.dumps({"choices": [{"message": msg}]}).encode())
+
+    monkeypatch.setattr(agent.urllib.request, "urlopen", flaky)
+    monkeypatch.setattr(agent.time, "sleep", sleeps.append)
+    client = agent.OpenAICompatClient("k", "https://x.test", "m")
+    res, _ = agent.analyze_message(client, demo.SCOPE, RATE, "add online ordering", agent.new_state(), use_cache=False)
+    assert res["verdict"] == "out_of_scope" and len(calls) == 2 and sleeps == [1]
